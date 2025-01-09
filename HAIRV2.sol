@@ -1,8 +1,3 @@
-// SPDX-License-Identifier: MIT
-
-// PARIS no optimise 0.8.20
-
-// No INFERIOR  Tokens here Copy Paste the Copy Paste !
 
 // File: @openzeppelin/contracts@4.5.0/token/ERC20/IERC20.sol
 
@@ -262,7 +257,7 @@ abstract contract ReentrancyGuard {
 
 // File: @uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol
 
-pragma solidity >=0.6.2; // Added real Imports not specialised router 
+pragma solidity >=0.6.2;
 
 interface IUniswapV2Router01 {
     function factory() external pure returns (address);
@@ -429,12 +424,8 @@ interface IUniswapV2Factory {
 
 pragma solidity ^0.8.20;
 
-// OpenZeppelin Contracts
 
 
-
-
-// Uniswap Interfaces
 
 
 
@@ -451,17 +442,10 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
     uint256 public _marketingWalletPercentage = 50;
     uint256 public _launchMarketingPercentage = 50;
 
-    uint256 firstBlock;
+    uint256 private firstBlock;
 
-    uint256 private _initialBuyTax = 20;
-    uint256 private _initialSellTax = 20;
-    uint256 private _finalBuyTax = 2;
-    uint256 private _finalSellTax = 3;
-    uint256 private _reduceBuyTaxAt = 25;
-    uint256 private _reduceSellTaxAt = 25;
-    uint256 private _preventSwapBefore = 25;
-    uint256 private _buyCount = 0;
-    uint256 private _sellCount = 0;
+    uint256 public buyTax;
+    uint256 public sellTax;
 
     uint8 private constant _decimals = 9;
     uint256 private constant _tTotal = 100000000 * 10**_decimals;
@@ -480,6 +464,11 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
 
     event ClearStuck(uint256 amount);
     event ClearToken(address TokenAddressCleared, uint256 Amount);
+    event TradingOpened(uint256 timestamp);
+    event AirdropExecuted(address indexed executor, uint256 totalAirdropped);
+    event BuyTaxUpdated(uint256 newBuyTax);
+    event SellTaxUpdated(uint256 newSellTax);
+    event TaxApplied(address indexed from, address indexed to, uint256 amount, uint256 taxAmount, string taxType);
 
     modifier lockTheSwap {
         inSwap = true;
@@ -487,30 +476,42 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
         inSwap = false;
     }
 
-    constructor () {
-        _marketingWallet = payable(0x83698e41ACd1C7Ee17219D236538d06Fbc99B405);  // CMH Test
-        _launchMarketingWallet = payable(0x83698e41ACd1C7Ee17219D236538d06Fbc99B405); // CMH Test
+    constructor (
+        address initialOwner,
+        address marketingWallet,
+        address launchMarketingWallet
+    ) {
+        require(initialOwner != address(0), "Initial owner cannot be zero address");
+        require(marketingWallet != address(0), "Marketing wallet cannot be zero address");
+        require(launchMarketingWallet != address(0), "Launch marketing wallet cannot be zero address");
 
-        // _marketingWallet = payable(0xdafD1808295A56D0c852eab1F9fa8E2dA9c6EA17); // tims ETH
-        // _launchMarketingWallet = payable(0xdafD1808295A56D0c852eab1F9fa8E2dA9c6EA17);  // tims ETH
-        _balances[_msgSender()] = 70000000 * 10**_decimals;
-        _balances[address(this)] = 30000000 * 10**_decimals;
+        _transferOwnership(initialOwner);
+
+        _balances[initialOwner] = _tTotal;
+
+        _marketingWallet = payable(marketingWallet);
+        _launchMarketingWallet = payable(launchMarketingWallet);
+
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
         _isExcludedFromFee[_marketingWallet] = true;
-        emit Transfer(address(0), _msgSender(), 70000000 * 10**_decimals);
-        emit Transfer(address(0), address(this), 30000000 * 10**_decimals);
+        _isExcludedFromFee[_launchMarketingWallet] = true;
+
+        buyTax = 20; // Initial buy tax
+        sellTax = 20; // Initial sell tax
+
+        emit Transfer(address(0), initialOwner, _tTotal);
     }
 
-    function name() public pure returns (string memory) {
+    function name() public pure  returns (string memory) {
         return _name;
     }
 
-    function symbol() public pure returns (string memory) {
+    function symbol() public pure  returns (string memory) {
         return _symbol;
     }
 
-    function decimals() public pure returns (uint8) {
+    function decimals() public pure  returns (uint8) {
         return _decimals;
     }
 
@@ -553,10 +554,9 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
+
         uint256 taxAmount = 0;
         if (from != owner() && to != owner()) {
-            taxAmount = 0;
-
             if(from != address(this)) {
                 require(tradingOpen, "Trading not enabled");
             }
@@ -564,8 +564,7 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
             if (from == uniswapV2Pair && to != address(uniswapV2Router) && !_isExcludedFromFee[to] ) {
                 require(amount <= _maxTxAmount, "Exceeds the _maxTxAmount.");
                 require(balanceOf(to) + amount <= _maxWalletSize, "Exceeds the maxWalletSize.");
-                taxAmount = (amount * ((_buyCount > _reduceBuyTaxAt) ? _finalBuyTax : _initialBuyTax)) / 100;
-                _buyCount++;
+                taxAmount = (amount * buyTax) / 100;
             }
 
             if (to != uniswapV2Pair && !_isExcludedFromFee[to]) {
@@ -573,12 +572,11 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
             }
 
             if(to == uniswapV2Pair && from != address(this) ){
-                taxAmount = (amount * ((_sellCount > _reduceSellTaxAt) ? _finalSellTax : _initialSellTax)) / 100;
-                _sellCount++;
+                taxAmount = (amount * sellTax) / 100;
             }
 
             uint256 contractTokenBalance = balanceOf(address(this));
-            if (!inSwap && to == uniswapV2Pair && swapEnabled && contractTokenBalance > _taxSwapThreshold && _buyCount > _preventSwapBefore) {
+            if (!inSwap && to == uniswapV2Pair && swapEnabled && contractTokenBalance > _taxSwapThreshold) {
                 swapTokensForEth(_min(amount, _min(contractTokenBalance, _maxTaxSwap)));
                 uint256 contractETHBalance = address(this).balance;
                 if(contractETHBalance > 0) {
@@ -590,6 +588,10 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
         if(taxAmount > 0) {
             _balances[address(this)] += taxAmount;
             emit Transfer(from, address(this), taxAmount);
+
+            // Determine tax type for the event
+            string memory taxType = from == uniswapV2Pair ? "Buy" : to == uniswapV2Pair ? "Sell" : "Other";
+            emit TaxApplied(from, to, amount, taxAmount, taxType);
         }
         _balances[from] -= amount;
         _balances[to] += (amount - taxAmount);
@@ -599,6 +601,8 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
     function _min(uint256 a, uint256 b) private pure returns (uint256) {
         return (a > b) ? b : a;
     }
+
+
 
     function swapTokensForEth(uint256 tokenAmount) private lockTheSwap nonReentrant {
         path[0] = address(this);
@@ -621,6 +625,11 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
     function initialReduceLMFee() external onlyOwner nonReentrant {
         _launchMarketingPercentage = 34;
         _marketingWalletPercentage = 66;
+        buyTax = 2; // Set buy tax to final buy tax
+        sellTax = 3; // Set sell tax to final sell tax
+
+        emit BuyTaxUpdated(buyTax);
+        emit SellTaxUpdated(sellTax);
     }
 
     function reduceHalfLMFee() external onlyOwner nonReentrant {
@@ -640,7 +649,7 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
         _launchMarketingWallet.transfer(launchWalletShare);
     }
 
-    function clearStuckToken(address tokenAddress, uint256 tokens) external nonReentrant returns (bool success) {
+    function clearStuckToken(address tokenAddress, uint256 tokens) external onlyOwner nonReentrant returns (bool success) {
         require(tokenAddress != address(this), "Can't rescue Project Token");
         if(tokens == 0){
             tokens = IERC20(tokenAddress).balanceOf(address(this));
@@ -649,13 +658,13 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
         return IERC20(tokenAddress).transfer(_marketingWallet, tokens);
     }
 
-    function manualSend() external nonReentrant {
+    function manualSend() external onlyOwner nonReentrant {
         require(address(this).balance > 0, "Contract balance must be greater than zero");
         uint256 balance = address(this).balance;
         _marketingWallet.transfer(balance);
     }
 
-    function manualSwap() external nonReentrant {
+    function manualSwap() external onlyOwner nonReentrant {
         uint256 tokenBalance = balanceOf(address(this));
         if(tokenBalance > 0 && tokenBalance > _taxSwapThreshold){
             swapTokensForEth(_taxSwapThreshold);
@@ -672,50 +681,127 @@ contract HairOfTrump is IERC20, Ownable, ReentrancyGuard {
     function openTrading() external onlyOwner nonReentrant {
         require(!tradingOpen, "Trading is already open");
 
-        // uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
-        uniswapV2Router = IUniswapV2Router02(0x8cFe327CEc66d1C090Dd72bd0FF11d690C33a2Eb);
+        // Initialize Uniswap Router
+        // Replace with the correct router address for your deployment network
+        uniswapV2Router = IUniswapV2Router02(0xeeabd314e2eE640B1aca3B27808972B05c7f6A3b);
+        // uniswapV2Router = IUniswapV2Router02(0x8cFe327CEc66d1C090Dd72bd0FF11d690C33a2Eb); //base
 
-        uint256 contractTokenBalance = balanceOf(address(this));
-        require(contractTokenBalance > 0, "No tokens to add to liquidity");
-
-        uint256 amountToSend = (contractTokenBalance * 67) / 100;
-        require(amountToSend > 0, "Insufficient token amount to add to liquidity");
-
-        uint256 contractETHBalance = address(this).balance;
-        require(contractETHBalance > 0, "No ETH to add to liquidity");
-
-        _approve(address(this), address(uniswapV2Router), contractTokenBalance);
-
+        // Create the pair
         uniswapV2Pair = IUniswapV2Factory(uniswapV2Router.factory()).createPair(address(this), uniswapV2Router.WETH());
-        uniswapV2Router.addLiquidityETH{value: contractETHBalance}(
-            address(this),
-            amountToSend,
-            0,
-            0,
-            owner(),
-            block.timestamp
-        );
 
-        IERC20(uniswapV2Pair).approve(address(uniswapV2Router), type(uint).max);
-
-        swapEnabled = true;
+        // Enable trading
         tradingOpen = true;
+        swapEnabled = true;
         firstBlock = block.number;
+
+        emit TradingOpened(block.timestamp);
     }
 
+    /**
+     * @notice Airdrops tokens to multiple wallets.
+     * @param airdropWallets Array of wallet addresses to receive tokens.
+     * @param amount Array of token amounts corresponding to each wallet.
+     */
     function airdropToWallets(
         address[] memory airdropWallets,
         uint256[] memory amount
-    ) external nonReentrant {
+    ) external onlyOwner nonReentrant {
         require(airdropWallets.length == amount.length, "Arrays must be the same length");
         require(airdropWallets.length <= 200, "Wallets list length must be <= 200");
+
+        uint256 totalAirdropped = 0;
+
         for (uint256 i = 0; i < airdropWallets.length; i++) {
             address wallet = airdropWallets[i];
-            uint256 airdropAmount = amount[i] * (10**9);
+            uint256 airdropAmount = amount[i] * (10**_decimals);
             require(balanceOf(msg.sender) >= airdropAmount, "Not Enough Tokens To Airdrop");
             _transfer(msg.sender, wallet, airdropAmount);
+            totalAirdropped += airdropAmount;
         }
+
+        emit AirdropExecuted(msg.sender, totalAirdropped);
+    }
+
+
+    /**
+     * @notice Returns the current buy tax.
+     * @return Current buy tax percentage.
+     */
+    function currentBuyTax() external view returns (uint256) {
+        return buyTax;
+    }
+
+    /**
+     * @notice Returns the current sell tax.
+     * @return Current sell tax percentage.
+     */
+    function currentSellTax() external view returns (uint256) {
+        return sellTax;
+    }
+
+    /**
+     * @notice Returns the Uniswap V2 pair address for this token.
+     * @return Uniswap V2 pair address.
+     */
+    function getUniswapV2Pair() external view returns (address) {
+        return uniswapV2Pair;
+    }
+
+    /**
+     * @notice Checks if trading is currently enabled.
+     * @return True if trading is enabled, false otherwise.
+     */
+    function isTradingEnabled() external view returns (bool) {
+        return tradingOpen;
     }
 
     receive() external payable {}
+}
+
+// File: tim333Factory.sol
+
+
+pragma solidity ^0.8.20;
+
+
+contract HairOfTrumpFactory {
+    event ContractDeployed(address indexed owner, address indexed contractAddress);
+
+    address[] public deployedContracts;
+    mapping(address => address[]) public ownerContracts;
+
+    /**
+     * @notice Deploys a new HairOfTrump token contract.
+     * @param marketingWallet The address of the marketing wallet.
+     * @param launchMarketingWallet The address of the launch marketing wallet.
+     * @return The address of the newly deployed HairOfTrump contract.
+     */
+    function deployToken(address marketingWallet, address launchMarketingWallet) external returns (address) {
+        HairOfTrump newToken = new HairOfTrump(msg.sender, marketingWallet, launchMarketingWallet);
+        address newTokenAddress = address(newToken);
+
+        deployedContracts.push(newTokenAddress);
+        ownerContracts[msg.sender].push(newTokenAddress);
+
+        emit ContractDeployed(msg.sender, newTokenAddress);
+
+        return newTokenAddress;
+    }
+
+    /**
+     * @notice Returns all deployed HairOfTrump contracts.
+     * @return An array of deployed contract addresses.
+     */
+    function getDeployedContracts() external view returns (address[] memory) {
+        return deployedContracts;
+    }
+
+    /**
+     * @notice Returns all HairOfTrump contracts deployed by a specific owner.
+     * @param owner The address of the owner.
+     * @return An array of contract addresses deployed by the owner.
+     */
+    function getContractsByOwner(address owner) external view returns (address[] memory) {
+        return ownerContracts[owner];
+    }
 }
