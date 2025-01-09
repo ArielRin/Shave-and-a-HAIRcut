@@ -1,5 +1,5 @@
 
-## **Comprehensive Security Audit Report**
+# **HAIR V2 Base Comprehensive Security Audit Report**
 
 **Project Name:** HairOfTrump  
 **Audit Date:** January 10, 2025  
