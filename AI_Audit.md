@@ -1,11 +1,8 @@
----
 
 ## **Comprehensive Security Audit Report**
 
 **Project Name:** HairOfTrump  
-**Contract Address:** *[To be provided]*  
 **Audit Date:** January 10, 2025  
-**Auditing Firm:** *[Your Auditing Company Name]*
 
 ---
 
@@ -356,6 +353,3 @@ emit TaxApplied(from, to, amount, taxAmount, taxType);
 - **Ownership Renouncement:** Transferring ownership of a contract to the zero address to make it immutable.
 - **Multi-Signature Wallet:** A wallet that requires multiple private keys to authorize transactions, enhancing security.
 
----
-
-*This report is intended for informational purposes only and does not constitute financial or legal advice. It is recommended to consult with professional advisors before making any decisions based on this audit.*
