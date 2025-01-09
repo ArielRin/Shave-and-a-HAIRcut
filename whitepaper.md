@@ -45,7 +45,7 @@ Welcome to **Hair Of Trump (HAIR)**, a revolutionary ERC20 token designed to emp
 HAIR has a fixed total supply of **100 million tokens**. The distribution is meticulously planned to ensure fairness, liquidity, and sustainability:
 
 - **70,000,000 HAIR (70%)** - Allocated to the **contract owner**. This allocation is intended for initial distribution, marketing, development, and liquidity provisioning.
-  
+
 - **30,000,000 HAIR (30%)** - Reserved within the **smart contract** for liquidity generation, fee management, and future developments.
 
 ---
@@ -92,7 +92,7 @@ Ensuring the security of the token and its ecosystem is paramount. HAIR incorpor
 ### 4.1 Ownership & Sentinels
 
 - **Ownership:** The deployer of the HAIR contract is designated as the **Owner**, possessing exclusive rights to execute critical administrative functions.
-  
+
 - **Sentinels:** While the contract owner is inherently a sentinel, **sentinels** are special addresses with elevated permissions. Currently, only the owner is set as a sentinel, allowing them to:
   - Remove transaction limits.
   - Adjust fee percentages.
@@ -101,7 +101,7 @@ Ensuring the security of the token and its ecosystem is paramount. HAIR incorpor
 ### 4.2 Safeguards
 
 - **SafeMath Library:** Utilized to prevent arithmetic overflows and underflows, ensuring secure mathematical operations.
-  
+
 - **Modifiers:** Access to sensitive functions is restricted using modifiers like `onlyOwner` and `onlyOwnerOrSentinel`, ensuring only authorized entities can execute critical operations.
 
 ---
@@ -113,7 +113,7 @@ Facilitating smooth trading and maintaining liquidity are crucial for the token'
 ### 5.1 Opening Trading
 
 - **Trading Control:** Trading is initially disabled to allow for setup and liquidity provisioning. Only the contract owner can enable trading.
-  
+
 - **Enabling Trading:** Once the owner calls the `openTrading` function:
   - The contract sets up the Uniswap V2 Router.
   - Creates a liquidity pair with ETH.
@@ -124,7 +124,7 @@ Facilitating smooth trading and maintaining liquidity are crucial for the token'
 ### 5.2 Liquidity Provision
 
 - **Uniswap Integration:** HAIR leverages Uniswap V2 for decentralized trading, ensuring liquidity and facilitating seamless swaps.
-  
+
 - **Liquidity Allocation:** Upon enabling trading, a significant portion of HAIR tokens and ETH are allocated to the liquidity pool, stabilizing the token's market presence.
 
 ---
@@ -136,13 +136,13 @@ To promote fairness and prevent market manipulation, HAIR implements anti-whale 
 ### 6.1 Maximum Transaction Limit
 
 - **Max Transaction Amount:** Initially set to **2,000,000 HAIR**.
-  
+
 - **Purpose:** Prevents large single transactions that could significantly impact the token's price, ensuring stability and fairness for all participants.
 
 ### 6.2 Maximum Wallet Size
 
 - **Max Wallet Size:** Initially set to **2,000,000 HAIR**.
-  
+
 - **Purpose:** Restricts any single wallet from holding more than 2% of the total supply, mitigating the risk of centralized control and potential market manipulation.
 
 ---
@@ -154,7 +154,7 @@ HAIR incorporates various utility functions to enhance user experience, promote 
 ### 7.1 Airdrop Mechanism
 
 - **Airdrop Functionality:** Allows the owner or sentinels to distribute HAIR tokens to multiple wallets simultaneously.
-  
+
 - **Parameters:**
   - **Wallet List:** Up to 200 wallets can be airdropped in a single transaction.
   - **Amounts:** Variable amounts can be specified for each wallet, facilitating customized distributions.
@@ -164,7 +164,7 @@ HAIR incorporates various utility functions to enhance user experience, promote 
 ### 7.2 Manual Operations
 
 - **Manual Send:** Allows the owner or sentinels to transfer accumulated ETH from the contract to the marketing wallet, ensuring timely funding for marketing activities.
-  
+
 - **Manual Swap:** Enables the conversion of accumulated HAIR tokens within the contract to ETH, facilitating the allocation of funds to designated wallets.
 
 These manual operations provide flexibility in managing the token's funds, ensuring responsiveness to market conditions and operational needs.
@@ -214,10 +214,10 @@ We invite you to join the HAIR community, participate in our journey, and contri
 
 # Stay Connected
 
-- **Website:** [Coming Soon]
-- **Telegram:** [Join Here](#)
-- **Twitter:** [Follow Us](#)
-- **Discord:** [Join the Community](#)
+- **Website:** [Here](https://hairoftrump.com/)
+- **Telegram:** [Join Here](https://t.me/+cPf5mjweW99lYzlh)
+- **Twitter:** [Follow Us](https://x.com/hair_oftrump?s=21)
+- **Tiktok:** [Join the Community](https://www.tiktok.com/@hairoftrump?_t=8oRNPl6eRmU&_r=1)
 
 ---
 
